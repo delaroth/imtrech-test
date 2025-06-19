@@ -1,0 +1,43 @@
+---
+- name: Setup Server and Users
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure net-snmp is installed
+      ansible.builtin.package:
+        name: net-snmp
+        state: present
+
+    - name: Create users avi, moshe, yoel
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - avi
+        - moshe
+        - yoel
+
+    - name: Install Nginx
+      ansible.builtin.package:
+        name: nginx
+        state: present
+
+    - name: Configure Nginx to listen on port 8090
+      ansible.builtin.lineinfile:
+        path: /etc/nginx/sites-available/default
+        regexp: 'listen 80 default_server;'
+        replace: 'listen 8090 default_server;'
+      notify: Restart Nginx Service
+
+    - name: Ensure Nginx service is running and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart Nginx Service
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
